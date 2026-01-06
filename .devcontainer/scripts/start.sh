@@ -2,7 +2,7 @@
 #===============================================================================
 # Auto-Claude Development Environment Startup
 # This script runs every time the container starts
-# It handles: service checks, venv activation, status display
+# It handles: permission fixes, service checks, venv activation, status display
 #===============================================================================
 
 # Colors for output
@@ -15,6 +15,28 @@ NC='\033[0m' # No Color
 
 # Configuration
 AUTO_CLAUDE_DIR="/workspace/auto-claude"
+
+#-------------------------------------------------------------------------------
+# Fix Permissions (runs every start to handle volume mount issues)
+#-------------------------------------------------------------------------------
+fix_permissions() {
+    # Fix Claude config directory permissions silently
+    CLAUDE_DIRS=(
+        "/home/vscode/.claude"
+        "/home/vscode/.claude-code"
+    )
+    
+    for dir in "${CLAUDE_DIRS[@]}"; do
+        if [ -d "$dir" ] && [ ! -w "$dir" ]; then
+            sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
+        elif [ ! -d "$dir" ]; then
+            mkdir -p "$dir" 2>/dev/null || {
+                sudo mkdir -p "$dir" 2>/dev/null
+                sudo chown -R vscode:vscode "$dir" 2>/dev/null
+            }
+        fi
+    done
+}
 
 #-------------------------------------------------------------------------------
 # Check Services
@@ -152,6 +174,7 @@ main() {
     echo -e "${GREEN}🔄 Starting Auto-Claude environment...${NC}"
     echo ""
     
+    fix_permissions   # Fix permissions first (silent)
     check_services
     activate_python
     check_claude

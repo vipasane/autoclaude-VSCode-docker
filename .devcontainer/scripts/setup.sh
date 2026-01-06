@@ -46,6 +46,38 @@ log_section() {
 }
 
 #-------------------------------------------------------------------------------
+# Fix Permissions for Mounted Volumes
+#-------------------------------------------------------------------------------
+fix_permissions() {
+    log_section "Fixing Permissions"
+    
+    # Fix Claude config directory permissions
+    # This is needed because Docker volumes may be created as root
+    CLAUDE_DIRS=(
+        "/home/vscode/.claude"
+        "/home/vscode/.claude-code"
+    )
+    
+    for dir in "${CLAUDE_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            # Check if we own it
+            if [ ! -w "$dir" ]; then
+                log_info "Fixing permissions on $dir..."
+                sudo chown -R vscode:vscode "$dir" 2>/dev/null || {
+                    log_warn "Could not fix permissions on $dir (may need manual sudo)"
+                }
+            fi
+        else
+            # Create with correct ownership
+            mkdir -p "$dir" 2>/dev/null || sudo mkdir -p "$dir"
+            sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
+        fi
+    done
+    
+    log_success "Permissions configured"
+}
+
+#-------------------------------------------------------------------------------
 # Clone Auto-Claude Repository
 #-------------------------------------------------------------------------------
 clone_repository() {
@@ -272,6 +304,7 @@ main() {
     echo ""
     
     # Run setup steps
+    fix_permissions      # NEW: Fix volume permissions first
     clone_repository
     setup_nodejs
     setup_python

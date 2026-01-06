@@ -70,6 +70,15 @@ RUN pip3 install --break-system-packages \
 # Create workspace directory
 RUN mkdir -p /workspace && chown vscode:vscode /workspace
 
+# PRE-CREATE Claude directories with correct ownership
+# This ensures they exist before volume mounts, preventing permission issues
+RUN mkdir -p /home/vscode/.claude \
+    && mkdir -p /home/vscode/.claude/todos \
+    && mkdir -p /home/vscode/.claude/debug \
+    && mkdir -p /home/vscode/.claude-code \
+    && chown -R vscode:vscode /home/vscode/.claude \
+    && chown -R vscode:vscode /home/vscode/.claude-code
+
 # Switch to non-root user
 USER vscode
 
