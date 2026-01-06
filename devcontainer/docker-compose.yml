@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  auto-claude:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auto-claude-dev
+    
+    # Keep container running for VS Code to attach
+    command: sleep infinity
+    
+    # Security: run as non-root
+    user: vscode
+    
+    # Environment variables
+    environment:
+      - GRAPHITI_ENABLED=true
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - NODE_ENV=development
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    
+    # Volumes for persistence and performance
+    volumes:
+      # Workspace mount (handled by devcontainer.json, but backup definition)
+      - ..:/workspace:cached
+      # Persist node_modules in a volume for performance on Windows
+      - auto-claude-node-modules:/workspace/node_modules
+      - frontend-node-modules:/workspace/apps/frontend/node_modules
+      - backend-node-modules:/workspace/apps/backend/node_modules
+      # Python virtual environment
+      - auto-claude-venv:/workspace/apps/backend/.venv
+      # Claude CLI config persistence
+      - claude-config:/home/vscode/.claude
+      # Claude Code history
+      - claude-history:/home/vscode/.claude-code
+    
+    # Ports
+    ports:
+      - "3000:3000"   # Frontend dev server
+      - "8000:8000"   # Backend API
+      - "5173:5173"   # Vite HMR (if used)
+    
+    # Network
+    networks:
+      - auto-claude-network
+    
+    # Dependencies
+    depends_on:
+      falkordb:
+        condition: service_healthy
+
+  # FalkorDB for Memory Layer
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: auto-claude-falkordb
+    ports:
+      - "6379:6379"
+    volumes:
+      - falkordb-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - auto-claude-network
+
+# Named volumes for data persistence
+volumes:
+  auto-claude-node-modules:
+    name: auto-claude-node-modules
+  frontend-node-modules:
+    name: auto-claude-frontend-modules
+  backend-node-modules:
+    name: auto-claude-backend-modules
+  auto-claude-venv:
+    name: auto-claude-venv
+  claude-config:
+    name: claude-config
+  claude-history:
+    name: claude-history
+  falkordb-data:
+    name: auto-claude-falkordb-data
+
+# Isolated network
+networks:
+  auto-claude-network:
+    name: auto-claude-network
+    driver: bridge
