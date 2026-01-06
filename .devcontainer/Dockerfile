@@ -1,22 +1,27 @@
 # Auto-Claude Dev Container
-# Optimized for VS Code Remote Development on Windows + Docker Desktop
+# Fully self-contained development environment
+# Just open in VS Code and everything sets up automatically
 
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 # Prevent interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies for Electron and Python
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Build essentials
     build-essential \
     curl \
     wget \
-    # Python dependencies
+    ca-certificates \
+    gnupg \
+    # Python
     python3.12 \
     python3.12-venv \
     python3.12-dev \
     python3-pip \
+    # Redis CLI for FalkorDB
+    redis-tools \
     # Electron/GUI dependencies (for headless testing)
     libgtk-3-0 \
     libnotify4 \
@@ -39,22 +44,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     ripgrep \
     fd-find \
+    unzip \
     # Cleanup
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 24.x
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+# Install Node.js 22.x LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
 
-# Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install global npm packages
+RUN npm install -g \
+    @anthropic-ai/claude-code \
+    pnpm
 
-# Install pnpm (Auto-Claude uses it)
-RUN npm install -g pnpm
-
-# Install Python tools
+# Install Python tools globally
 RUN pip3 install --break-system-packages \
     uv \
     ruff \
@@ -64,10 +69,6 @@ RUN pip3 install --break-system-packages \
 
 # Create workspace directory
 RUN mkdir -p /workspace && chown vscode:vscode /workspace
-
-# Set up Python virtual environment location
-ENV VIRTUAL_ENV=/workspace/apps/backend/.venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Switch to non-root user
 USER vscode

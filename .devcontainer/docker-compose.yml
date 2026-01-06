@@ -22,32 +22,29 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
     
-    # Volumes for persistence and performance
+    # Volumes for persistence
     volumes:
-      # Workspace mount - main project files
+      # Workspace mount
       - ..:/workspace:cached
-      # Persist node_modules in volumes for Windows performance
-      # These prevent slow file I/O on Windows
-      - node-modules-root:/workspace/node_modules
-      - node-modules-frontend:/workspace/apps/frontend/node_modules
+      # Node modules in volumes for Windows performance
+      - node-modules-root:/workspace/auto-claude/node_modules
+      - node-modules-frontend:/workspace/auto-claude/apps/frontend/node_modules
+      - node-modules-backend:/workspace/auto-claude/apps/backend/node_modules
       # Claude CLI config persistence
       - claude-config:/home/vscode/.claude
-      # Claude Code history
       - claude-history:/home/vscode/.claude-code
-      # NOTE: We do NOT mount .venv as a volume - let it be created inside workspace
-      # This avoids the "empty directory" problem
     
     # Ports
     ports:
-      - "3000:3000"   # Frontend dev server
-      - "8000:8000"   # Backend API
-      - "5173:5173"   # Vite HMR (if used)
+      - "3000:3000"
+      - "8000:8000"
+      - "5173:5173"
     
     # Network
     networks:
       - auto-claude-network
     
-    # Dependencies
+    # Wait for FalkorDB
     depends_on:
       falkordb:
         condition: service_healthy
@@ -69,20 +66,20 @@ services:
     networks:
       - auto-claude-network
 
-# Named volumes for data persistence
 volumes:
   node-modules-root:
-    name: auto-claude-node-modules-root
+    name: autoclaude-node-modules-root
   node-modules-frontend:
-    name: auto-claude-node-modules-frontend
+    name: autoclaude-node-modules-frontend
+  node-modules-backend:
+    name: autoclaude-node-modules-backend
   claude-config:
-    name: auto-claude-config
+    name: autoclaude-claude-config
   claude-history:
-    name: auto-claude-history
+    name: autoclaude-claude-history
   falkordb-data:
-    name: auto-claude-falkordb-data
+    name: autoclaude-falkordb-data
 
-# Isolated network
 networks:
   auto-claude-network:
     name: auto-claude-network
