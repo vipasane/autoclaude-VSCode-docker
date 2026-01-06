@@ -54,8 +54,8 @@ This is a **devcontainer configuration** that creates a fully self-contained Doc
 
 | Script | Purpose |
 |--------|---------|
-| `setup-macos.sh` | Installs Docker Desktop, VS Code, Dev Containers extension on macOS |
-| `setup-linux.sh` | Installs Docker, VS Code, Dev Containers extension on Linux (Ubuntu/Debian/Fedora/Arch) |
+| `setup-macos.sh` | Checks prerequisites on macOS, suggests install commands for missing items |
+| `setup-linux.sh` | Checks prerequisites on Linux, suggests install commands for missing items |
 
 **Container Scripts** (`.devcontainer/scripts/`) - Run automatically or manually inside container:
 
