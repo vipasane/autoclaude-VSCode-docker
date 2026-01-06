@@ -1,15 +1,35 @@
 # Auto-Claude VS Code Dev Container
 
-A fully automated, self-contained development environment for [Auto-Claude](https://github.com/AndyMik90/Auto-Claude).
+A fully automated, isolated development environment for [Auto-Claude](https://github.com/AndyMik90/Auto-Claude) running in Docker with VS Code Remote Development.
+
+## ⚡ One-Line Quick Start (Windows)
+
+**Open PowerShell and run:**
+
+```powershell
+irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 | iex
+```
+
+This will:
+1. ✅ Check that Docker and VS Code are installed
+2. ✅ Download this repository
+3. ✅ Extract to `C:\Users\YourName\AutoClaude`
+4. ✅ Open VS Code automatically
+
+Then just click **"Reopen in Container"** when VS Code prompts you!
+
+---
 
 ## Features
 
-- **One-click setup** — Just open in VS Code and everything installs automatically
-- **Auto-clones repository** — No manual git clone needed
-- **Isolated environment** — Runs entirely in Docker
-- **FalkorDB included** — Memory Layer works out of the box
-- **Persistent data** — Node modules, Python venv, and Claude config survive rebuilds
-- **Windows optimized** — Volume mounts for better I/O performance
+- ✅ **One-click setup** — Just open in VS Code, everything installs automatically
+- ✅ **Auto-clones Auto-Claude** — No manual git commands needed
+- ✅ **Fully isolated** — Runs entirely in Docker, keeps your system clean
+- ✅ **FalkorDB included** — Memory Layer works out of the box
+- ✅ **Persistent data** — Survives container rebuilds
+- ✅ **Windows optimized** — Volume mounts for better I/O performance
+
+---
 
 ## Prerequisites
 
@@ -20,150 +40,147 @@ A fully automated, self-contained development environment for [Auto-Claude](http
 | Dev Containers Extension | Install `ms-vscode-remote.remote-containers` in VS Code |
 | Claude Pro/Max subscription | Required for Claude Code CLI |
 
-## Quick Start
+---
 
-### 1. Create Project Folder
+## Setup Options
 
-```powershell
-# Create a new folder for the project
-mkdir C:\AutoClaude
-cd C:\AutoClaude
-
-# Create .devcontainer folder
-mkdir .devcontainer
-mkdir .devcontainer\scripts
-```
-
-### 2. Copy Files
-
-Copy these files to `C:\AutoClaude\.devcontainer\`:
-- `devcontainer.json`
-- `docker-compose.yml`
-- `Dockerfile`
-- `scripts/setup.sh`
-- `scripts/start.sh`
-- `scripts/update.sh`
-- `scripts/reset.sh`
-
-Or clone this repository directly.
-
-### 3. (Optional) Set OAuth Token
-
-Get your Claude Code OAuth token:
+### Option 1: One-Line PowerShell (Easiest)
 
 ```powershell
-# If Claude Code is installed locally
-claude setup-token
+irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 | iex
 ```
 
-Set as Windows environment variable:
+**Custom install path:**
+```powershell
+$installPath = "D:\MyProjects\AutoClaude"; irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 -OutFile setup.ps1; .\setup.ps1 -InstallPath $installPath
+```
+
+### Option 2: Download Batch File
+
+1. Download [setup-autoclaude.bat](https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup-autoclaude.bat)
+2. Double-click to run
+3. Follow the prompts
+
+### Option 3: Clone and Disconnect
 
 ```powershell
-# PowerShell (permanent)
-[System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token", "User")
+# Clone this repository
+git clone https://github.com/vipasane/autoclaude-VSCode-docker.git AutoClaude
 
-# Or set via: System Properties → Environment Variables
+# Enter the directory
+cd AutoClaude
+
+# Remove git connection (makes it your own project)
+Remove-Item -Recurse -Force .git
+
+# Open in VS Code
+code .
 ```
 
-### 4. Open in VS Code
+### Option 4: Download ZIP
 
-1. Open VS Code
-2. **File → Open Folder** → Select `C:\AutoClaude`
-3. Click **"Reopen in Container"** when prompted
+1. Click **Code** → **Download ZIP** on this page
+2. Extract to a folder (e.g., `C:\AutoClaude`)
+3. Open the folder in VS Code
 
+### Option 5: Use as Template (GitHub)
+
+1. Click **"Use this template"** button above
+2. Create your own repository
+3. Clone your new repository
+
+---
+
+## First Time Setup
+
+After opening in VS Code:
+
+1. **Click "Reopen in Container"** when prompted
+   
    Or: `Ctrl+Shift+P` → "Dev Containers: Reopen in Container"
 
-4. Wait for setup (first time takes 5-10 minutes)
+2. **Wait for setup** (first time takes 5-10 minutes)
+   - Clones Auto-Claude repository
+   - Installs Node.js dependencies
+   - Creates Python virtual environment
+   - Starts FalkorDB
 
-### 5. Start Coding!
+3. **Authenticate Claude Code** (see below)
 
-```bash
-# Navigate to Auto-Claude
-cd /workspace/auto-claude
+4. **Start developing!**
+   ```bash
+   cd /workspace/auto-claude
+   npm run dev
+   ```
 
-# Start development servers
-npm run dev
+---
 
-# Or use Claude Code
-claude
-```
+## Claude Code Authentication
 
-## What Gets Installed
+You need a **Claude Pro or Max subscription** to use Claude Code.
 
-The setup script automatically:
+### Method 1: Login Inside Container (Easiest - No Local Install Needed)
 
-1. ✅ Clones Auto-Claude repository from GitHub
-2. ✅ Installs all Node.js dependencies
-3. ✅ Creates Python virtual environment
-4. ✅ Installs Python dependencies
-5. ✅ Creates backend `.env` configuration
-6. ✅ Configures Git safe directories
-7. ✅ Starts FalkorDB for Memory Layer
-
-## File Structure
-
-```
-C:\AutoClaude\
-├── .devcontainer/
-│   ├── devcontainer.json      # VS Code configuration
-│   ├── docker-compose.yml     # Docker services
-│   ├── Dockerfile             # Container image
-│   └── scripts/
-│       ├── setup.sh           # Initial setup (runs once)
-│       ├── start.sh           # Startup checks (runs each time)
-│       ├── update.sh          # Pull latest changes
-│       └── reset.sh           # Clean and reinstall
-└── auto-claude/               # ← Created automatically
-    ├── apps/
-    │   ├── frontend/
-    │   └── backend/
-    └── ...
-```
-
-## Available Scripts
-
-Run these from the VS Code terminal:
-
-| Script | Description |
-|--------|-------------|
-| `bash .devcontainer/scripts/setup.sh` | Re-run full setup |
-| `bash .devcontainer/scripts/update.sh` | Pull latest changes & update deps |
-| `bash .devcontainer/scripts/reset.sh` | Interactive reset (node/python/full) |
-
-## Commands Reference
-
-### Development
+Just run this in the VS Code terminal:
 
 ```bash
-# Navigate to project
-cd /workspace/auto-claude
-
-# Start all dev servers
-npm run dev
-
-# Start frontend only
-cd apps/frontend && npm run dev
-
-# Start backend only
-cd apps/backend
-source .venv/bin/activate
-python run.py
+claude login
 ```
 
-### Claude Code
+This opens a browser window. Log in with your Anthropic account and you're done!
+
+> **Note:** Credentials persist in a Docker volume across container restarts.
+
+### Method 2: OAuth Token (For Automation)
+
+If you have Claude Code installed locally:
+
+```powershell
+# On your local machine - get your OAuth token
+claude setup-token
+
+# Set as permanent environment variable
+[System.Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
+```
+
+The container automatically picks up this environment variable.
+
+### Method 3: API Key
+
+```bash
+# Inside the container
+claude config set apiKey your-api-key-here
+```
+
+### Verify Authentication
+
+```bash
+claude --version
+claude "Hello, are you working?"
+```
+
+---
+
+## Usage
+
+### Start Development Servers
+
+```bash
+cd /workspace/auto-claude
+npm run dev
+```
+
+### Claude Code CLI
 
 ```bash
 # Interactive mode
 claude
 
-# With prompt
+# With a prompt
 claude "Help me create a new feature"
 
 # Continue previous conversation
 claude --continue
-
-# Authenticate (if not using OAuth token)
-claude login
 ```
 
 ### Backend CLI (Autonomous Tasks)
@@ -177,13 +194,41 @@ python spec_runner.py --interactive
 
 # Run autonomous build
 python run.py --spec 001
-
-# Review and merge
-python run.py --spec 001 --review
-python run.py --spec 001 --merge
 ```
 
-## Port Mappings
+---
+
+## Service Status Dashboard
+
+Every time the container starts, you'll see:
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║           Auto-Claude Development Environment                 ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Service Status                                               ║
+║    Repository:    ● Ready                                     ║
+║    FalkorDB:      ● Running                                   ║
+║    Python:        ● Python 3.12.3                             ║
+║    Claude Code:   ● 2.0.76                                    ║
+║    Auth:          ● Authenticated                             ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Helper Scripts
+
+| Command | Description |
+|---------|-------------|
+| `bash .devcontainer/scripts/setup.sh` | Re-run full setup |
+| `bash .devcontainer/scripts/update.sh` | Pull latest Auto-Claude |
+| `bash .devcontainer/scripts/reset.sh` | Interactive reset menu |
+| `bash .devcontainer/scripts/start.sh` | Show status dashboard |
+
+---
+
+## Ports
 
 | Port | Service | Description |
 |------|---------|-------------|
@@ -192,73 +237,47 @@ python run.py --spec 001 --merge
 | 5173 | Vite | Hot Module Replacement |
 | 6379 | FalkorDB | Memory Layer database |
 
+---
+
 ## Troubleshooting
 
-### Container won't start
-
-```powershell
-# Check Docker is running
-docker info
-
-# Check for port conflicts
-netstat -ano | findstr :3000
-netstat -ano | findstr :6379
-```
-
-### Setup script fails
+### Setup script didn't run automatically
 
 ```bash
-# Re-run setup manually
-bash .devcontainer/scripts/setup.sh
+bash /workspace/.devcontainer/scripts/setup.sh
+```
 
-# Check logs
-cat /tmp/setup.log
+Or: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container Without Cache"
+
+### Claude Code authentication fails
+
+```bash
+rm -rf ~/.claude
+claude login
 ```
 
 ### FalkorDB not responding
 
 ```bash
-# Check container status
-docker ps | grep falkordb
-
-# Restart FalkorDB
 docker restart auto-claude-falkordb
-
-# Check logs
-docker logs auto-claude-falkordb
 ```
 
-### Python venv issues
-
-```bash
-# Reset Python environment
-bash .devcontainer/scripts/reset.sh
-# Select option 2
-```
-
-### Clean rebuild
+### Full reset
 
 ```powershell
-# In PowerShell, remove all volumes
-docker volume rm autoclaude-node-modules-root
-docker volume rm autoclaude-node-modules-frontend
-docker volume rm autoclaude-falkordb-data
+# Remove all volumes (PowerShell)
+docker volume rm autoclaude-node-modules-root autoclaude-node-modules-frontend autoclaude-falkordb-data autoclaude-claude-config
 
-# In VS Code: Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
+# Then in VS Code: Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
 ```
 
-## Security Notes
-
-- Container runs as non-root user `vscode`
-- Host filesystem only exposed via workspace mount
-- FalkorDB runs in separate container on isolated network
-- Claude credentials stored in Docker volume (not on host)
+---
 
 ## Customization
 
 ### Change Auto-Claude Branch
 
-Edit `scripts/setup.sh`:
+Edit `.devcontainer/scripts/setup.sh`:
 
 ```bash
 AUTO_CLAUDE_BRANCH="main"  # Change from "develop"
@@ -266,29 +285,19 @@ AUTO_CLAUDE_BRANCH="main"  # Change from "develop"
 
 ### Add VS Code Extensions
 
-Edit `devcontainer.json`:
-
-```json
-"extensions": [
-  "your.extension-id"
-]
-```
-
-### Add System Packages
-
-Edit `Dockerfile`:
-
-```dockerfile
-RUN apt-get update && apt-get install -y \
-    your-package-here
-```
-
-Then rebuild: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
+Edit `.devcontainer/devcontainer.json` and add to the extensions array.
 
 ---
 
 ## Links
 
 - [Auto-Claude Repository](https://github.com/AndyMik90/Auto-Claude)
-- [VS Code Dev Containers Docs](https://code.visualstudio.com/docs/devcontainers/containers)
+- [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+- [Claude Code Docs](https://docs.anthropic.com/claude-code)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+---
+
+## License
+
+This devcontainer setup is provided as-is. Auto-Claude itself is licensed under AGPL-3.0.
