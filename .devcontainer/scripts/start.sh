@@ -25,7 +25,7 @@ fix_permissions() {
         "/home/vscode/.claude"
         "/home/vscode/.claude-code"
     )
-    
+
     for dir in "${CLAUDE_DIRS[@]}"; do
         if [ -d "$dir" ] && [ ! -w "$dir" ]; then
             sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
@@ -34,6 +34,19 @@ fix_permissions() {
                 sudo mkdir -p "$dir" 2>/dev/null
                 sudo chown -R vscode:vscode "$dir" 2>/dev/null
             }
+        fi
+    done
+
+    # Fix node_modules volume permissions silently
+    NODE_MODULE_DIRS=(
+        "$AUTO_CLAUDE_DIR/node_modules"
+        "$AUTO_CLAUDE_DIR/apps/frontend/node_modules"
+        "$AUTO_CLAUDE_DIR/apps/backend/node_modules"
+    )
+
+    for dir in "${NODE_MODULE_DIRS[@]}"; do
+        if [ -d "$dir" ] && [ ! -w "$dir" ]; then
+            sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
         fi
     done
 }

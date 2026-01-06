@@ -110,16 +110,33 @@ clone_repository() {
 #-------------------------------------------------------------------------------
 setup_nodejs() {
     log_section "Setting up Node.js Dependencies"
-    
+
     cd "$AUTO_CLAUDE_DIR"
-    
+
+    # Fix permissions on node_modules volumes (they may be created as root)
+    log_info "Fixing node_modules permissions..."
+    NODE_MODULE_DIRS=(
+        "$AUTO_CLAUDE_DIR/node_modules"
+        "$AUTO_CLAUDE_DIR/apps/frontend/node_modules"
+        "$AUTO_CLAUDE_DIR/apps/backend/node_modules"
+    )
+    for dir in "${NODE_MODULE_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
+        else
+            mkdir -p "$dir" 2>/dev/null || sudo mkdir -p "$dir"
+            sudo chown -R vscode:vscode "$dir" 2>/dev/null || true
+        fi
+    done
+    log_success "Permissions fixed"
+
     # Root dependencies
     if [ -f "package.json" ]; then
         log_info "Installing root dependencies..."
         npm install || log_warn "Root npm install had issues"
         log_success "Root dependencies installed"
     fi
-    
+
     # Frontend dependencies
     if [ -f "apps/frontend/package.json" ]; then
         log_info "Installing frontend dependencies..."
@@ -128,7 +145,7 @@ setup_nodejs() {
         log_success "Frontend dependencies installed"
         cd "$AUTO_CLAUDE_DIR"
     fi
-    
+
     # Backend Node dependencies (if any)
     if [ -f "apps/backend/package.json" ]; then
         log_info "Installing backend Node dependencies..."
