@@ -57,7 +57,8 @@
     "GRAPHITI_ENABLED": "true",
     "FALKORDB_HOST": "falkordb",
     "FALKORDB_PORT": "6379",
-    "AUTO_CLAUDE_DIR": "/workspace/auto-claude"
+    "AUTO_CLAUDE_DIR": "/workspace/auto-claude",
+    "ELECTRON_DISABLE_SANDBOX": "1"
   },
 
   "remoteEnv": {
