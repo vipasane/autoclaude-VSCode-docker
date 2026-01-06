@@ -2,18 +2,29 @@
 
 A fully automated, isolated development environment for [Auto-Claude](https://github.com/AndyMik90/Auto-Claude) running in Docker with VS Code Remote Development.
 
-## ⚡ One-Line Quick Start (Windows)
+## ⚡ One-Line Quick Start
 
-**Open PowerShell and run:**
+### macOS / Linux
+```bash
+curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.sh | bash
+```
 
+### Windows (PowerShell)
 ```powershell
 irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 | iex
 ```
 
-This will:
+### Already have Claude Code installed?
+```bash
+claude -p "Clone https://github.com/vipasane/autoclaude-VSCode-docker to ~/AutoClaude, then open it in VS Code"
+```
+
+---
+
+All methods will:
 1. ✅ Check that Docker and VS Code are installed
 2. ✅ Download this repository
-3. ✅ Extract to `C:\Users\YourName\AutoClaude`
+3. ✅ Extract to `~/AutoClaude` (or `C:\Users\YourName\AutoClaude` on Windows)
 4. ✅ Open VS Code automatically
 
 Then just click **"Reopen in Container"** when VS Code prompts you!
@@ -27,43 +38,64 @@ Then just click **"Reopen in Container"** when VS Code prompts you!
 - ✅ **Fully isolated** — Runs entirely in Docker, keeps your system clean
 - ✅ **FalkorDB included** — Memory Layer works out of the box
 - ✅ **Persistent data** — Survives container rebuilds
-- ✅ **Windows optimized** — Volume mounts for better I/O performance
+- ✅ **Cross-platform** — Works on macOS, Linux, and Windows (WSL2)
 
 ---
 
 ## Prerequisites
 
-| Requirement | Installation |
-|-------------|--------------|
-| Docker Desktop | [Download](https://www.docker.com/products/docker-desktop/) — Enable WSL 2 backend |
-| VS Code | [Download](https://code.visualstudio.com/) |
-| Dev Containers Extension | Install `ms-vscode-remote.remote-containers` in VS Code |
-| Claude Pro/Max subscription | Required for Claude Code CLI |
+| Requirement | macOS | Linux | Windows |
+|-------------|-------|-------|---------|
+| Docker | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Docker Engine (via setup script) | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + WSL2 |
+| VS Code | [Download](https://code.visualstudio.com/) | Via setup script or [Download](https://code.visualstudio.com/) | [Download](https://code.visualstudio.com/) |
+| Dev Containers Extension | Auto-installed by setup script | Auto-installed by setup script | Install in VS Code |
+| Claude Pro/Max subscription | Required for Claude Code CLI | Required for Claude Code CLI | Required for Claude Code CLI |
 
 ---
 
 ## Setup Options
 
-### Option 1: One-Line PowerShell (Easiest)
+### Option 1: One-Line Script (Easiest)
 
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.sh | bash
+```
+
+**Custom install path (macOS/Linux):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.sh | bash -s -- ~/Projects/AutoClaude
+```
+
+**Windows (PowerShell):**
 ```powershell
 irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 | iex
 ```
 
-**Custom install path:**
+**Custom install path (Windows):**
 ```powershell
 $installPath = "D:\MyProjects\AutoClaude"; irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 -OutFile setup.ps1; .\setup.ps1 -InstallPath $installPath
 ```
 
-### Option 2: Download Batch File
+### Option 2: Full Prerequisites Setup (First Time)
 
-1. Download [setup-autoclaude.bat](https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup-autoclaude.bat)
-2. Double-click to run
-3. Follow the prompts
+If you don't have Docker/VS Code installed yet:
 
-### Option 3: Clone and Disconnect
+**macOS:**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/.devcontainer/host-setup/setup-macos.sh)
+```
 
-```powershell
+**Linux (Ubuntu/Debian/Fedora/Arch):**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/.devcontainer/host-setup/setup-linux.sh)
+```
+
+**Windows:** Download [setup-autoclaude.bat](https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup-autoclaude.bat) and double-click
+
+### Option 3: Clone with Git
+
+```bash
 # Clone this repository
 git clone https://github.com/vipasane/autoclaude-VSCode-docker.git AutoClaude
 
@@ -71,7 +103,8 @@ git clone https://github.com/vipasane/autoclaude-VSCode-docker.git AutoClaude
 cd AutoClaude
 
 # Remove git connection (makes it your own project)
-Remove-Item -Recurse -Force .git
+rm -rf .git  # Linux/macOS
+# Remove-Item -Recurse -Force .git  # Windows PowerShell
 
 # Open in VS Code
 code .
@@ -80,7 +113,7 @@ code .
 ### Option 4: Download ZIP
 
 1. Click **Code** → **Download ZIP** on this page
-2. Extract to a folder (e.g., `C:\AutoClaude`)
+2. Extract to a folder (e.g., `~/AutoClaude` or `C:\AutoClaude`)
 3. Open the folder in VS Code
 
 ### Option 5: Use as Template (GitHub)
@@ -219,6 +252,15 @@ Every time the container starts, you'll see:
 
 ## Helper Scripts
 
+**Host Machine (before opening in VS Code):**
+
+| Command | Description |
+|---------|-------------|
+| `bash .devcontainer/host-setup/setup-macos.sh` | Install Docker, VS Code, extensions on macOS |
+| `bash .devcontainer/host-setup/setup-linux.sh` | Install Docker, VS Code, extensions on Linux |
+
+**Inside Container:**
+
 | Command | Description |
 |---------|-------------|
 | `bash .devcontainer/scripts/setup.sh` | Re-run full setup |
@@ -264,11 +306,11 @@ docker restart auto-claude-falkordb
 
 ### Full reset
 
-```powershell
-# Remove all volumes (PowerShell)
-docker volume rm autoclaude-node-modules-root autoclaude-node-modules-frontend autoclaude-falkordb-data autoclaude-claude-config
+```bash
+# Remove all volumes (works on all platforms)
+docker volume rm autoclaude-node-modules-root autoclaude-node-modules-frontend autoclaude-falkordb-data autoclaude-claude-config autoclaude-claude-history
 
-# Then in VS Code: Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
+# Then in VS Code: Ctrl+Shift+P (Cmd+Shift+P on macOS) → "Dev Containers: Rebuild Container Without Cache"
 ```
 
 ---
