@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "24"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
@@ -26,11 +26,10 @@
         "ms-azuretools.vscode-docker",
         "eamodio.gitlens",
         "usernamehw.errorlens",
-        "christian-kohler.path-intellisense",
-        "formulahendry.auto-rename-tag"
+        "christian-kohler.path-intellisense"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.defaultInterpreterPath": "/workspace/apps/backend/.venv/bin/python",
         "python.formatting.provider": "black",
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -40,7 +39,8 @@
         "terminal.integrated.defaultProfile.linux": "bash",
         "files.watcherExclude": {
           "**/node_modules/**": true,
-          "**/.git/**": true
+          "**/.git/**": true,
+          "**/.venv/**": true
         }
       }
     }
@@ -57,13 +57,6 @@
   "postStartCommand": "bash .devcontainer/post-start.sh",
 
   "remoteUser": "vscode",
-
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-    "source=auto-claude-node-modules,target=/workspace/node_modules,type=volume",
-    "source=auto-claude-venv,target=/workspace/apps/backend/.venv,type=volume",
-    "source=claude-config,target=/home/vscode/.claude,type=volume"
-  ],
 
   "containerEnv": {
     "GRAPHITI_ENABLED": "true",

@@ -24,18 +24,18 @@ services:
     
     # Volumes for persistence and performance
     volumes:
-      # Workspace mount (handled by devcontainer.json, but backup definition)
+      # Workspace mount - main project files
       - ..:/workspace:cached
-      # Persist node_modules in a volume for performance on Windows
-      - auto-claude-node-modules:/workspace/node_modules
-      - frontend-node-modules:/workspace/apps/frontend/node_modules
-      - backend-node-modules:/workspace/apps/backend/node_modules
-      # Python virtual environment
-      - auto-claude-venv:/workspace/apps/backend/.venv
+      # Persist node_modules in volumes for Windows performance
+      # These prevent slow file I/O on Windows
+      - node-modules-root:/workspace/node_modules
+      - node-modules-frontend:/workspace/apps/frontend/node_modules
       # Claude CLI config persistence
       - claude-config:/home/vscode/.claude
       # Claude Code history
       - claude-history:/home/vscode/.claude-code
+      # NOTE: We do NOT mount .venv as a volume - let it be created inside workspace
+      # This avoids the "empty directory" problem
     
     # Ports
     ports:
@@ -71,18 +71,14 @@ services:
 
 # Named volumes for data persistence
 volumes:
-  auto-claude-node-modules:
-    name: auto-claude-node-modules
-  frontend-node-modules:
-    name: auto-claude-frontend-modules
-  backend-node-modules:
-    name: auto-claude-backend-modules
-  auto-claude-venv:
-    name: auto-claude-venv
+  node-modules-root:
+    name: auto-claude-node-modules-root
+  node-modules-frontend:
+    name: auto-claude-node-modules-frontend
   claude-config:
-    name: claude-config
+    name: auto-claude-config
   claude-history:
-    name: claude-history
+    name: auto-claude-history
   falkordb-data:
     name: auto-claude-falkordb-data
 
