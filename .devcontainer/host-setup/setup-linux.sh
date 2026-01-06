@@ -1,11 +1,10 @@
 #!/bin/bash
 #===============================================================================
-# Auto-Claude DevContainer - Linux Host Setup
-# Run this script on your Linux machine BEFORE opening the project in VS Code
+# Auto-Claude DevContainer - Linux Prerequisites Check
+# This script checks if all prerequisites are installed and provides
+# installation commands for anything missing. It does NOT install anything.
 # Supports: Ubuntu/Debian, Fedora/RHEL, Arch Linux
 #===============================================================================
-
-set -e
 
 # Colors
 RED='\033[0;31m'
@@ -16,9 +15,12 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BLUE}╔═══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     Auto-Claude DevContainer - Linux Setup                ║${NC}"
+echo -e "${BLUE}║     Auto-Claude DevContainer - Linux Prerequisites        ║${NC}"
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
 echo ""
+
+MISSING=()
+COMMANDS=()
 
 #-------------------------------------------------------------------------------
 # Detect Linux Distribution
@@ -29,280 +31,213 @@ detect_distro() {
         DISTRO=$ID
         DISTRO_LIKE=$ID_LIKE
         VERSION=$VERSION_ID
+        PRETTY_NAME=$PRETTY_NAME
     elif [ -f /etc/lsb-release ]; then
         . /etc/lsb-release
         DISTRO=$DISTRIB_ID
         VERSION=$DISTRIB_RELEASE
+        PRETTY_NAME="$DISTRIB_ID $DISTRIB_RELEASE"
     else
         DISTRO="unknown"
+        PRETTY_NAME="Unknown Linux"
     fi
-
-    echo -e "${BLUE}🐧 Detected: ${NC}$DISTRO $VERSION"
 }
+
+detect_distro
+echo -e "${BLUE}🐧 Detected: ${NC}$PRETTY_NAME"
+echo ""
 
 #-------------------------------------------------------------------------------
-# Package manager helpers
+# Check Docker
 #-------------------------------------------------------------------------------
-install_debian() {
-    sudo apt-get update
-    sudo apt-get install -y "$@"
-}
+echo -e "${BLUE}🐳 Checking Docker...${NC}"
+if command -v docker &> /dev/null; then
+    DOCKER_VERSION=$(docker --version 2>/dev/null)
+    echo -e "  ${GREEN}✓${NC} $DOCKER_VERSION"
 
-install_fedora() {
-    sudo dnf install -y "$@"
-}
+    if docker info &> /dev/null 2>&1; then
+        echo -e "  ${GREEN}✓${NC} Docker daemon is running"
+    else
+        echo -e "  ${YELLOW}⚠${NC} Docker installed but daemon not accessible"
+        if ! groups $USER | grep -q docker; then
+            echo -e "  ${YELLOW}→${NC} Your user is not in the docker group"
+            MISSING+=("Docker group membership")
+            COMMANDS+=("sudo usermod -aG docker \$USER && newgrp docker")
+        else
+            echo -e "  ${YELLOW}→${NC} Try: sudo systemctl start docker"
+        fi
+    fi
+else
+    echo -e "  ${RED}✗${NC} Docker not found"
+    MISSING+=("Docker")
 
-install_arch() {
-    sudo pacman -S --noconfirm "$@"
-}
-
-install_package() {
     case $DISTRO in
         ubuntu|debian|pop|linuxmint)
-            install_debian "$@"
+            COMMANDS+=("# Install Docker on $DISTRO:")
+            COMMANDS+=("sudo apt-get update")
+            COMMANDS+=("sudo apt-get install -y ca-certificates curl gnupg")
+            COMMANDS+=("sudo install -m 0755 -d /etc/apt/keyrings")
+            COMMANDS+=("curl -fsSL https://download.docker.com/linux/$DISTRO/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg")
+            COMMANDS+=("echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$DISTRO \$(. /etc/os-release && echo \$VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list")
+            COMMANDS+=("sudo apt-get update")
+            COMMANDS+=("sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin")
+            COMMANDS+=("sudo usermod -aG docker \$USER && newgrp docker")
             ;;
-        fedora|rhel|centos|rocky|almalinux)
-            install_fedora "$@"
+        fedora)
+            COMMANDS+=("# Install Docker on Fedora:")
+            COMMANDS+=("sudo dnf -y install dnf-plugins-core")
+            COMMANDS+=("sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo")
+            COMMANDS+=("sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin")
+            COMMANDS+=("sudo systemctl start docker && sudo systemctl enable docker")
+            COMMANDS+=("sudo usermod -aG docker \$USER && newgrp docker")
             ;;
         arch|manjaro|endeavouros)
-            install_arch "$@"
+            COMMANDS+=("# Install Docker on Arch:")
+            COMMANDS+=("sudo pacman -S docker docker-compose")
+            COMMANDS+=("sudo systemctl start docker && sudo systemctl enable docker")
+            COMMANDS+=("sudo usermod -aG docker \$USER && newgrp docker")
             ;;
         *)
-            echo -e "${RED}✗${NC} Unsupported distribution: $DISTRO"
-            echo -e "  Please install manually: $@"
-            return 1
+            COMMANDS+=("# Install Docker: https://docs.docker.com/engine/install/")
             ;;
     esac
-}
+fi
 
 #-------------------------------------------------------------------------------
-# Check/Install Docker
+# Check VS Code
 #-------------------------------------------------------------------------------
-install_docker() {
-    echo -e "${BLUE}🐳 Checking Docker...${NC}"
+echo -e "${BLUE}📝 Checking VS Code...${NC}"
+if command -v code &> /dev/null; then
+    echo -e "  ${GREEN}✓${NC} VS Code installed"
+else
+    echo -e "  ${RED}✗${NC} VS Code not found"
+    MISSING+=("VS Code")
 
-    if command -v docker &> /dev/null; then
-        DOCKER_VERSION=$(docker --version)
-        echo -e "  ${GREEN}✓${NC} $DOCKER_VERSION"
+    case $DISTRO in
+        ubuntu|debian|pop|linuxmint)
+            COMMANDS+=("")
+            COMMANDS+=("# Install VS Code on $DISTRO:")
+            COMMANDS+=("wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg")
+            COMMANDS+=("sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg")
+            COMMANDS+=("echo \"deb [arch=amd64,arm64 signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main\" | sudo tee /etc/apt/sources.list.d/vscode.list")
+            COMMANDS+=("rm packages.microsoft.gpg")
+            COMMANDS+=("sudo apt-get update && sudo apt-get install -y code")
+            ;;
+        fedora)
+            COMMANDS+=("")
+            COMMANDS+=("# Install VS Code on Fedora:")
+            COMMANDS+=("sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc")
+            COMMANDS+=("echo -e \"[code]\\nname=Visual Studio Code\\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\\nenabled=1\\ngpgcheck=1\\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc\" | sudo tee /etc/yum.repos.d/vscode.repo")
+            COMMANDS+=("sudo dnf install -y code")
+            ;;
+        arch|manjaro|endeavouros)
+            COMMANDS+=("")
+            COMMANDS+=("# Install VS Code on Arch (AUR):")
+            COMMANDS+=("yay -S visual-studio-code-bin  # or use paru, or download from https://code.visualstudio.com/")
+            ;;
+        *)
+            COMMANDS+=("")
+            COMMANDS+=("# Install VS Code: https://code.visualstudio.com/")
+            ;;
+    esac
+fi
+
+#-------------------------------------------------------------------------------
+# Check Dev Containers Extension
+#-------------------------------------------------------------------------------
+echo -e "${BLUE}🧩 Checking Dev Containers extension...${NC}"
+if command -v code &> /dev/null; then
+    if code --list-extensions 2>/dev/null | grep -q "ms-vscode-remote.remote-containers"; then
+        echo -e "  ${GREEN}✓${NC} Dev Containers extension installed"
     else
-        echo -e "  ${YELLOW}→${NC} Installing Docker..."
-
-        case $DISTRO in
-            ubuntu|debian|pop|linuxmint)
-                # Remove old versions
-                sudo apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
-
-                # Install prerequisites
-                sudo apt-get update
-                sudo apt-get install -y ca-certificates curl gnupg
-
-                # Add Docker's official GPG key
-                sudo install -m 0755 -d /etc/apt/keyrings
-                curl -fsSL https://download.docker.com/linux/$DISTRO/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-                sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-                # Set up repository
-                echo \
-                    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$DISTRO \
-                    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-                    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-                # Install Docker
-                sudo apt-get update
-                sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-                ;;
-
-            fedora)
-                sudo dnf -y install dnf-plugins-core
-                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-                sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-                ;;
-
-            arch|manjaro|endeavouros)
-                sudo pacman -S --noconfirm docker docker-compose
-                ;;
-
-            *)
-                echo -e "${RED}✗${NC} Please install Docker manually for $DISTRO"
-                echo -e "  Visit: https://docs.docker.com/engine/install/"
-                return 1
-                ;;
-        esac
-
-        echo -e "  ${GREEN}✓${NC} Docker installed"
+        echo -e "  ${RED}✗${NC} Dev Containers extension not found"
+        MISSING+=("Dev Containers extension")
+        COMMANDS+=("")
+        COMMANDS+=("# Install Dev Containers extension:")
+        COMMANDS+=("code --install-extension ms-vscode-remote.remote-containers")
     fi
-
-    # Start and enable Docker service
-    echo -e "${BLUE}🔧 Configuring Docker service...${NC}"
-    sudo systemctl start docker
-    sudo systemctl enable docker
-    echo -e "  ${GREEN}✓${NC} Docker service enabled"
-
-    # Add current user to docker group
-    if ! groups $USER | grep -q docker; then
-        echo -e "  ${YELLOW}→${NC} Adding $USER to docker group..."
-        sudo usermod -aG docker $USER
-        echo -e "  ${YELLOW}⚠${NC} You may need to log out and back in for group changes to take effect"
-        echo -e "  ${YELLOW}→${NC} Or run: newgrp docker"
-    else
-        echo -e "  ${GREEN}✓${NC} User already in docker group"
-    fi
-}
+else
+    echo -e "  ${YELLOW}⚠${NC} Cannot check extensions (VS Code not installed)"
+fi
 
 #-------------------------------------------------------------------------------
-# Check/Install VS Code
+# Check Git
 #-------------------------------------------------------------------------------
-install_vscode() {
-    echo -e "${BLUE}📝 Checking VS Code...${NC}"
+echo -e "${BLUE}📦 Checking Git...${NC}"
+if command -v git &> /dev/null; then
+    GIT_VERSION=$(git --version)
+    echo -e "  ${GREEN}✓${NC} $GIT_VERSION"
+else
+    echo -e "  ${RED}✗${NC} Git not found"
+    MISSING+=("Git")
 
-    if command -v code &> /dev/null; then
-        echo -e "  ${GREEN}✓${NC} VS Code installed"
-    else
-        echo -e "  ${YELLOW}→${NC} Installing VS Code..."
-
-        case $DISTRO in
-            ubuntu|debian|pop|linuxmint)
-                wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-                sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-                rm -f packages.microsoft.gpg
-                sudo apt-get update
-                sudo apt-get install -y code
-                ;;
-
-            fedora|rhel|centos)
-                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-                sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-                sudo dnf install -y code
-                ;;
-
-            arch|manjaro|endeavouros)
-                # Use yay or paru if available, otherwise manual
-                if command -v yay &> /dev/null; then
-                    yay -S --noconfirm visual-studio-code-bin
-                elif command -v paru &> /dev/null; then
-                    paru -S --noconfirm visual-studio-code-bin
-                else
-                    echo -e "  ${YELLOW}→${NC} Install from AUR: visual-studio-code-bin"
-                    echo -e "  ${YELLOW}→${NC} Or download from: https://code.visualstudio.com/"
-                fi
-                ;;
-
-            *)
-                echo -e "${YELLOW}→${NC} Download VS Code from: https://code.visualstudio.com/"
-                ;;
-        esac
-
-        if command -v code &> /dev/null; then
-            echo -e "  ${GREEN}✓${NC} VS Code installed"
-        fi
-    fi
-}
+    case $DISTRO in
+        ubuntu|debian|pop|linuxmint)
+            COMMANDS+=("sudo apt-get install -y git")
+            ;;
+        fedora)
+            COMMANDS+=("sudo dnf install -y git")
+            ;;
+        arch|manjaro|endeavouros)
+            COMMANDS+=("sudo pacman -S git")
+            ;;
+        *)
+            COMMANDS+=("# Install git using your package manager")
+            ;;
+    esac
+fi
 
 #-------------------------------------------------------------------------------
-# Check/Install Dev Containers Extension
+# Summary
 #-------------------------------------------------------------------------------
-install_devcontainers_extension() {
-    echo -e "${BLUE}🧩 Checking Dev Containers extension...${NC}"
+echo ""
 
-    if command -v code &> /dev/null; then
-        if code --list-extensions 2>/dev/null | grep -q "ms-vscode-remote.remote-containers"; then
-            echo -e "  ${GREEN}✓${NC} Dev Containers extension installed"
-        else
-            echo -e "  ${YELLOW}→${NC} Installing Dev Containers extension..."
-            code --install-extension ms-vscode-remote.remote-containers
-            echo -e "  ${GREEN}✓${NC} Dev Containers extension installed"
-        fi
-    else
-        echo -e "  ${YELLOW}⚠${NC} VS Code not found, skipping extension install"
-    fi
-}
-
-#-------------------------------------------------------------------------------
-# Check/Install Git
-#-------------------------------------------------------------------------------
-install_git() {
-    echo -e "${BLUE}📦 Checking Git...${NC}"
-
-    if command -v git &> /dev/null; then
-        GIT_VERSION=$(git --version)
-        echo -e "  ${GREEN}✓${NC} $GIT_VERSION"
-    else
-        echo -e "  ${YELLOW}→${NC} Installing Git..."
-
-        case $DISTRO in
-            ubuntu|debian|pop|linuxmint)
-                install_debian git
-                ;;
-            fedora|rhel|centos|rocky|almalinux)
-                install_fedora git
-                ;;
-            arch|manjaro|endeavouros)
-                install_arch git
-                ;;
-        esac
-
-        echo -e "  ${GREEN}✓${NC} Git installed"
-    fi
-}
-
-#-------------------------------------------------------------------------------
-# Claude OAuth Token Setup
-#-------------------------------------------------------------------------------
-setup_oauth_info() {
-    echo ""
-    echo -e "${BLUE}🔐 Claude OAuth Token Setup...${NC}"
-
-    if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-        echo -e "  ${GREEN}✓${NC} CLAUDE_CODE_OAUTH_TOKEN is set"
-    else
-        echo -e "  ${YELLOW}⚠${NC} CLAUDE_CODE_OAUTH_TOKEN not set"
-        echo ""
-        echo -e "  To set it permanently, add to your ~/.bashrc or ~/.zshrc:"
-        echo -e "  ${YELLOW}export CLAUDE_CODE_OAUTH_TOKEN=\"your-token-here\"${NC}"
-        echo ""
-        echo -e "  Or you can run 'claude login' inside the container after setup."
-    fi
-}
-
-#-------------------------------------------------------------------------------
-# Main
-#-------------------------------------------------------------------------------
-main() {
-    detect_distro
-    echo ""
-
-    install_git
-    install_docker
-    install_vscode
-    install_devcontainers_extension
-    setup_oauth_info
-
-    echo ""
+if [ ${#MISSING[@]} -eq 0 ]; then
     echo -e "${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║     ✓ Linux Setup Complete!                               ║${NC}"
+    echo -e "${GREEN}║     ✓ All prerequisites are installed!                    ║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "  ${BLUE}Next Steps:${NC}"
     echo ""
+    echo -e "  1. Clone and open the project:"
+    echo -e "     ${YELLOW}git clone https://github.com/vipasane/autoclaude-VSCode-docker.git ~/AutoClaude${NC}"
+    echo -e "     ${YELLOW}code ~/AutoClaude${NC}"
+    echo ""
+    echo -e "  2. Click 'Reopen in Container' when prompted"
+    echo -e "     Or: Ctrl+Shift+P → 'Dev Containers: Reopen in Container'"
+    echo ""
+else
+    echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║     Missing Prerequisites                                  ║${NC}"
+    echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  The following are missing:"
+    for item in "${MISSING[@]}"; do
+        echo -e "    ${RED}✗${NC} $item"
+    done
+    echo ""
+    echo -e "  ${BLUE}Run these commands to install:${NC}"
+    echo ""
+    for cmd in "${COMMANDS[@]}"; do
+        if [ -n "$cmd" ]; then
+            echo -e "    ${YELLOW}$cmd${NC}"
+        else
+            echo ""
+        fi
+    done
+    echo ""
+    echo -e "  Then re-run this script to verify."
+    echo ""
+fi
 
-    if ! groups $USER | grep -q docker; then
-        echo -e "  ${YELLOW}0. Log out and back in (or run 'newgrp docker') for docker access${NC}"
-        echo ""
-    fi
-
-    echo -e "  1. Open this folder in VS Code:"
-    echo -e "     ${YELLOW}code .${NC}"
-    echo ""
-    echo -e "  2. When prompted, click 'Reopen in Container'"
-    echo -e "     Or use Command Palette (Ctrl+Shift+P): 'Dev Containers: Reopen in Container'"
-    echo ""
-    echo -e "  3. Wait for container to build (first time takes ~5-10 minutes)"
-    echo ""
-    echo -e "  4. Start developing:"
-    echo -e "     ${YELLOW}cd /workspace/auto-claude${NC}"
-    echo -e "     ${YELLOW}npm run dev${NC}"
-    echo ""
-}
-
-main "$@"
+#-------------------------------------------------------------------------------
+# Claude OAuth Token Info
+#-------------------------------------------------------------------------------
+echo -e "${BLUE}🔐 Claude Authentication:${NC}"
+if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+    echo -e "  ${GREEN}✓${NC} CLAUDE_CODE_OAUTH_TOKEN is set"
+else
+    echo -e "  ${YELLOW}ℹ${NC} You can authenticate later by running 'claude login' inside the container"
+    echo -e "  ${YELLOW}ℹ${NC} Or set CLAUDE_CODE_OAUTH_TOKEN in ~/.bashrc for automatic auth"
+fi
+echo ""

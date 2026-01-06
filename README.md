@@ -77,9 +77,9 @@ irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/set
 $installPath = "D:\MyProjects\AutoClaude"; irm https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup.ps1 -OutFile setup.ps1; .\setup.ps1 -InstallPath $installPath
 ```
 
-### Option 2: Full Prerequisites Setup (First Time)
+### Option 2: Check Prerequisites First
 
-If you don't have Docker/VS Code installed yet:
+Not sure if you have everything installed? Run the check script for your platform:
 
 **macOS:**
 ```bash
@@ -90,6 +90,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-d
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/.devcontainer/host-setup/setup-linux.sh)
 ```
+
+These scripts check what's installed and provide copy-paste commands for anything missing.
 
 **Windows:** Download [setup-autoclaude.bat](https://raw.githubusercontent.com/vipasane/autoclaude-VSCode-docker/main/setup-autoclaude.bat) and double-click
 
@@ -256,8 +258,8 @@ Every time the container starts, you'll see:
 
 | Command | Description |
 |---------|-------------|
-| `bash .devcontainer/host-setup/setup-macos.sh` | Install Docker, VS Code, extensions on macOS |
-| `bash .devcontainer/host-setup/setup-linux.sh` | Install Docker, VS Code, extensions on Linux |
+| `bash .devcontainer/host-setup/setup-macos.sh` | Check prerequisites on macOS, suggest install commands |
+| `bash .devcontainer/host-setup/setup-linux.sh` | Check prerequisites on Linux, suggest install commands |
 
 **Inside Container:**
 

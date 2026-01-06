@@ -167,15 +167,15 @@ download_repo() {
 }
 
 #-------------------------------------------------------------------------------
-# Install Dev Containers Extension
+# Check Dev Containers Extension
 #-------------------------------------------------------------------------------
-install_extension() {
+check_extension() {
     if command -v code &> /dev/null; then
         if ! code --list-extensions 2>/dev/null | grep -q "ms-vscode-remote.remote-containers"; then
             echo ""
-            echo -e "${BLUE}🧩 Installing Dev Containers extension...${NC}"
-            code --install-extension ms-vscode-remote.remote-containers
-            echo -e "  ${GREEN}✓${NC} Extension installed"
+            echo -e "${YELLOW}⚠${NC} Dev Containers extension not found"
+            echo -e "  Run: ${YELLOW}code --install-extension ms-vscode-remote.remote-containers${NC}"
+            EXTENSION_MISSING=true
         fi
     fi
 }
@@ -199,20 +199,35 @@ open_vscode() {
 show_instructions() {
     echo ""
     echo -e "${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║     ✓ Setup Complete!                                     ║${NC}"
+    echo -e "${GREEN}║     ✓ Download Complete!                                  ║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "  ${BLUE}Next Steps:${NC}"
     echo ""
-    echo -e "  1. In VS Code, click ${YELLOW}\"Reopen in Container\"${NC} when prompted"
+
+    STEP=1
+    if [ "$EXTENSION_MISSING" = true ]; then
+        echo -e "  $STEP. Install the Dev Containers extension:"
+        echo -e "     ${YELLOW}code --install-extension ms-vscode-remote.remote-containers${NC}"
+        echo ""
+        STEP=$((STEP + 1))
+    fi
+
+    echo -e "  $STEP. In VS Code, click ${YELLOW}\"Reopen in Container\"${NC} when prompted"
     echo -e "     Or: Cmd/Ctrl+Shift+P → \"Dev Containers: Reopen in Container\""
     echo ""
-    echo -e "  2. Wait for the container to build (~5-10 minutes first time)"
+    STEP=$((STEP + 1))
+
+    echo -e "  $STEP. Wait for the container to build (~5-10 minutes first time)"
     echo ""
-    echo -e "  3. Authenticate Claude Code:"
+    STEP=$((STEP + 1))
+
+    echo -e "  $STEP. Authenticate Claude Code:"
     echo -e "     ${YELLOW}claude login${NC}"
     echo ""
-    echo -e "  4. Start developing:"
+    STEP=$((STEP + 1))
+
+    echo -e "  $STEP. Start developing:"
     echo -e "     ${YELLOW}cd /workspace/auto-claude${NC}"
     echo -e "     ${YELLOW}npm run dev${NC}"
     echo ""
@@ -224,10 +239,11 @@ show_instructions() {
 # Main
 #-------------------------------------------------------------------------------
 main() {
+    EXTENSION_MISSING=false
     detect_os
     check_prerequisites
     download_repo
-    install_extension
+    check_extension
     open_vscode
     show_instructions
 }
