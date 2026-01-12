@@ -93,7 +93,7 @@ clone_repository() {
         
         # Remove directory if it exists but isn't a git repo
         if [ -d "$AUTO_CLAUDE_DIR" ]; then
-            rm -rf "$AUTO_CLAUDE_DIR"
+            sudo rm -rf "$AUTO_CLAUDE_DIR"
         fi
         
         git clone --branch "$AUTO_CLAUDE_BRANCH" "$AUTO_CLAUDE_REPO" "$AUTO_CLAUDE_DIR"
